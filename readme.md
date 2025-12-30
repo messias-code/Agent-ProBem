@@ -314,6 +314,7 @@ As mudanças do **JSON original → YAML proposto** foram pensadas para:
 - [X] Implementar tratamento de saída JSON
 - [X] Validar com contratos reais
 - [ ] Migrar base existente JSON → YAML
+- [ ] Reconhecimento Óptico de Caracteres (OCR) (contratos digitalizados).
 - [ ] Configurar logs de auditoria
 
 ## ⚠️ Limitações

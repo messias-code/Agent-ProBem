@@ -1,0 +1,31 @@
+Pequenos ajustes recomendados
+Reforçar “não inventar/deduzir além das regras”
+Incluir logo no topo das instruções uma frase curta em negrito do tipo:
+
+“Use apenas informações explícitas no contrato, exceto quando houver regra de dedução claramente descrita acima. Se não tiver certeza, use \"nao localizado\".”
+Isso traz para o novo prompt a essência de algumas regras gerais do YAML, mas em uma linha só.​
+
+Harmonizar exatamente as strings fixas
+
+No catálogo de inconsistências consta "Sem inconsistencias" com S maiúsculo, mas no texto de instrução está "Sem inconsistencias"; cuidar para que tudo use a mesma grafia e capitalização, pois modelos de saída estruturada são sensíveis a isso.​
+
+Deixar claro em um bullet único: “Use exatamente as frases do catálogo, sem alterar letras nem acentuação.”
+
+Deixar 100% explícito o comportamento em divergência numérica
+
+Em Mensalidade SEM Desconto e COM Desconto, você cita divergências no catálogo de inconsistências, mas não diz textualmente o que colocar em conteudo nesses casos. Vale adicionar uma linha:
+
+“Se o valor do contrato existir mas divergir do esperado, preencha conteudo com o valor do contrato (normalizado) e valido: 0.”
+Isso traz de volta um detalhe importante do YAML sem reintroduzir toda a verbosidade.
+
+Repetir a regra de comparação de semestre em forma de “checagem” simples
+
+Você já explica que deve quebrar em [ANO, INDICE]. Pode ficar ainda mais mecânico:
+
+“Extraia apenas números do semestre do contrato e do esperado, forme dois pares [ANO, INDICE] e compare. Se ambos os números forem iguais → valido: 1, senão valido: 0.”
+Essa redundância, ainda que curta, ajuda modelos que costumam errar justamente em ano/semestre.​
+
+Reforçar que a resposta deve ser só JSON
+
+Acrescentar imediatamente antes do bloco JSON: “Responda APENAS com o JSON válido, sem texto antes ou depois.”
+Isso costuma aumentar a taxa de conformidade com saída estritamente estruturada
