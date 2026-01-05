@@ -89,25 +89,21 @@ logica_de_campo:
 # CATALOGO DE INCONSISTENCIAS (Copie a frase EXATA)
 catalogo_erros:
   nivel_critico:
-    - 'CPF nao localizado no contrato'
+    - 'CPF não localizado no contrato'
     - 'CPF do contrato diverge do sistema'
   nivel_alto:
-    - 'Semestre letivo nao localizado no contrato'
+    - 'Semestre letivo não localizado no contrato'
     - 'Semestre letivo do contrato diverge do sistema'
   nivel_medio:
-    - 'Valor da mensalidade integral nao localizado no contrato'
-    - 'Contrato informa apenas o valor total do semestre, sem detalhar a mensalidade'
-    - 'Base de calculo para a mensalidade nao localizada no contrato'
-    - 'Mensalidade integral no contrato e MENOR que a esperada'
-    - 'Mensalidade integral no contrato e MAIOR que a esperada'
+    - 'Valor da mensalidade integral não localizado no contrato'
+    - 'Mensalidade integral localizada de forma ambígua ou confusa' # (Nova categorização de inconsistencia)
+    - 'Mensalidade integral no contrato é MENOR que a esperada'
+    - 'Mensalidade integral no contrato é MAIOR que a esperada'
   nivel_baixo:
-    - 'Contrato com valores de desconto diferentes no texto e na tabela'
-    - 'Contrato possui multiplos descontos sem regra clara de aplicacao'
-    - 'Tabela de pagamentos do contrato e ambigua ou confusa'
-    - 'Valor da mensalidade com desconto nao localizado no contrato'
-    - 'Contrato e sistema divergem sobre a existencia de desconto'
-    - 'Mensalidade com desconto no contrato e MENOR que o esperado'
-    - 'Mensalidade com desconto no contrato e MAIOR que o esperado'
+    - 'Valor da mensalidade com desconto não localizado no contrato'
+    - 'Mensalidade com desconto localizada de forma ambígua ou confusa' # (Nova categorização de inconsistencia)
+    - 'Mensalidade com desconto no contrato é MENOR que o esperado'
+    - 'Mensalidade com desconto no contrato é MAIOR que o esperado'
 
 # ESTRUTURA JSON DE SAIDA
 # Nota: 'x' indica que o valor deve ser calculado (0 ou 1) pelo modelo.
