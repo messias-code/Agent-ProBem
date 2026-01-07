@@ -21,6 +21,17 @@ contexto: |
   - NUNCA invente frases de erro.
   - Ao detectar uma falha, consulte a secao 'catalogo_erros'.
   - Escolha a frase EXATA que descreve o problema e copie para o campo 'inconsistencias.conteudo'.
+  - Se houver MAIS DE UMA inconsistência aplicável:
+    - Concatene as frases EXATAS do catalogo
+    - Separe por vírgula e espaço (, )
+    - Mantenha a ordem de severidade: Critico > Alto > Medio > Baixo.
+  - REGRA DE SUPRESSAO CRITICA:
+    - Se houver erro de NIVEL CRITICO (CPF):
+      - NAO avalie semestre.
+      - NAO avalie mensalidades.
+      - NAO concatene outras inconsistencias.
+      - inconsistencias.conteudo DEVE conter APENAS a mensagem critica.
+
 
 objetivo: |
   1) Extrair e Normalizar dados do contrato baseando-se nos pilares acima.
@@ -41,6 +52,69 @@ regras_gerais:
   - 'FORMATO SAIDA: JSON estrito. Sem markdown.'
   - 'ABSTRACAO DE FORMATO: Diferencas de pontuacao nao sao erros. Normalize antes de validar.'
   - 'USO DO CATALOGO: Proibido criar mensagens de erro fora do catalogo fornecido.'
+  - 'REGRA GLOBAL DE CONSISTENCIA: Campo que possuir erro registrado no catalogo NUNCA pode ter valido = 1.'
+  - 'REGRA DE BLOQUEIO ABSOLUTO: Erro de CPF (Nivel Critico) interrompe todas as demais validacoes e invalida automaticamente o contrato.'
+  - 'ORDEM DE EXECUCAO: CPF → Semestre → Mensalidades.'
+
+# TIPAGEM DE DADOS (CONTRATO COERCITIVO)
+contrato_tipagem:
+  regra_geral:
+    - 'Cada campo possui UM tipo permitido.'
+    - 'Violação de tipo é ERRO GRAVE de execução.'
+    - 'Campos NUNCA devem conter explicações, diagnósticos ou justificativas.'
+
+  campos_numericos_monetarios:
+    campos:
+      - mensalidade_sem_desconto
+      - mensalidade_com_desconto
+    tipo_permitido:
+      - 'NUMERO_DECIMAL (formato exato 9999.99)'
+      - 'STRING_VAZIA: '''' (exclusivo para valor nao localizado)'
+    semantica:
+      - ''''' (string vazia) significa: valor nao localizado no contrato.'
+      - '0.00 significa: valor capturado explicitamente como zero.'
+    proibicoes_absolutas:
+      - 'Proibido múltiplos valores (/, -, e, ou).'
+      - 'Proibido texto explicativo.'
+      - 'Proibido frases do catalogo.'
+      - 'Proibido qualquer string semantica (ex: ''Não localizado'').'
+
+  campo_cpf:
+    campos:
+      - cpf
+    tipo_permitido:
+      - 'STRING_NUMERICA_EXATA (11 digitos, sem pontuacao)'
+      - 'STRING_EXATA: ''Não localizado'''
+    proibicoes_absolutas:
+      - 'Proibido pontuacao.'
+      - 'Proibido texto explicativo.'
+      - 'Proibido frases do catalogo.'
+
+  campo_semestre:
+    campos:
+      - semestre
+    tipo_permitido:
+      - 'STRING_FORMATADA: AAAA/I (ex: 2025/1 | 2025/2 | 2024/1 | 2024/2 etc.)'
+      - 'STRING_EXATA: ''Não localizado'''
+    proibicoes_absolutas:
+      - 'Proibido texto explicativo.'
+      - 'Proibido datas completas.'
+      - 'Proibido formatos longos (ex: ''primeiro semestre'').'
+
+  campos_texto:
+    campos:
+      - inconsistencias.conteudo
+      - status.conteudo
+    tipo_permitido:
+      - 'APENAS frases do catalogo_erros'
+      - 'OU exatamente: ''Sem inconsistencias'''
+      - 'OU ''valido'' | ''invalido'' (para status)'
+
+  normalizacao_nao_localizado:
+    - 'Campos TEXTUAIS usam EXATAMENTE: ''Não localizado''.'
+    - 'Campos NUMERICOS usam EXCLUSIVAMENTE string vazia ''''.'
+    - 'Nunca use null.'
+    - 'Nenhuma outra variacao e permitida.'
 
 # LOGICA DE CAMPO
 logica_de_campo:
@@ -52,7 +126,7 @@ logica_de_campo:
       Se CPF nao localizado OU divergente:
       1. Pare a analise.
       2. output.cpf.valido = 0
-      3. output.status.conteudo = 'invalido'
+      3. output.status.conteudo = 0
       4. Busque no Catalogo (Nivel Critico) a mensagem adequada.
       5. ZERAR o conteudo de todos os outros campos (string vazia).
 
@@ -73,6 +147,11 @@ logica_de_campo:
     estrategia_extracao:
       - 'PASSO A: Procure o valor mensal explicito (ex: ''valor da parcela de R$...'').'
       - 'PASSO B: Se nao encontrar A, procure o Valor Total do semestre e divida por 6 (apenas se houver mencao a 6 parcelas).'
+    regra_ausencia:
+      - 'Se valor == '''' (nao localizado):'
+      - 'Marque valido = 0.'
+      - 'Status geral DEVE ser invalido.'
+      - 'Registre erro de Nivel Medio no catalogo.'
     validacao:
       - 'Calcule a diferenca absoluta: abs(ValorContrato - ValorEsperado).'
       - 'Se diferenca == 0 -> Valido=1 (Valor exato).'
@@ -82,9 +161,20 @@ logica_de_campo:
   4_mensalidade_com_desconto:
     tipo: DESEJAVEL
     regra: 'Busque evidencia de bolsa. Se nao houver mencao -> valor = mensalidade_sem_desconto.'
+    regra_ausencia:
+      - 'Se valor == '''' (nao localizado):'
+      - 'Marque valido = 0.'
+      - 'NAO invalide o status geral.'
+      - 'Registre erro de Nivel Baixo no catalogo.'
     validacao: 'Mesma regra: sem tolerancia (deve ser exato).'
-    impacto_status: 'Erro aqui NAO invalida o status geral (apenas marca valido=0 neste campo).'
+    impacto_status: 'Erro aqui NAO invalida o status geral.'
     em_caso_de_erro: 'Busque no Catalogo (Nivel Baixo) a mensagem adequada.'
+    regra_colisao_de_valores:
+      - 'Se forem detectados DOIS ou MAIS valores monetarios candidatos no contrato:'
+      - 'Escolha O MENOR valor numericamente.'
+      - 'O MENOR valor SEMPRE prevalece para armazenamento.'
+      - 'A ambiguidade NUNCA deve ser refletida no campo.'
+      - 'Registre a ambiguidade SOMENTE em inconsistencias.conteudo usando o catalogo.'
 
 # CATALOGO DE INCONSISTENCIAS (Copie a frase EXATA)
 catalogo_erros:
@@ -96,17 +186,16 @@ catalogo_erros:
     - 'Semestre letivo do contrato diverge do sistema'
   nivel_medio:
     - 'Valor da mensalidade integral não localizado no contrato'
-    - 'Mensalidade integral localizada de forma ambígua ou confusa' # (Nova categorização de inconsistencia)
+    - 'Mensalidade integral localizada de forma ambígua ou confusa'
     - 'Mensalidade integral no contrato é MENOR que a esperada'
     - 'Mensalidade integral no contrato é MAIOR que a esperada'
   nivel_baixo:
     - 'Valor da mensalidade com desconto não localizado no contrato'
-    - 'Mensalidade com desconto localizada de forma ambígua ou confusa' # (Nova categorização de inconsistencia)
+    - 'Mensalidade com desconto localizada de forma ambígua ou confusa'
     - 'Mensalidade com desconto no contrato é MENOR que o esperado'
     - 'Mensalidade com desconto no contrato é MAIOR que o esperado'
 
 # ESTRUTURA JSON DE SAIDA
-# Nota: 'x' indica que o valor deve ser calculado (0 ou 1) pelo modelo.
 saida_json:
   cpf: { conteudo: 'xxxxx', valido: x }
   mensalidade_sem_desconto: { conteudo: 'xxxxx', valido: x }
@@ -146,8 +235,8 @@ exemplos_saida:
     cpf: { conteudo: '12345678901', valido: 1 }
     mensalidade_sem_desconto: { conteudo: '1200.00', valido: 1 }
     mensalidade_com_desconto: { conteudo: '1100.00', valido: 1 }
-    semestre: { conteudo: 'nao localizado', valido: 0 }
-    inconsistencias: { conteudo: 'Semestre letivo nao localizado no contrato', valido: 0 }
+    semestre: { conteudo: 'Não localizado', valido: 0 }
+    inconsistencias: { conteudo: 'Semestre letivo não localizado no contrato', valido: 0 }
     status: { conteudo: 'invalido', valido: 0 }
 
   contrato_total_semestre_dividir_por_6_ok:
@@ -163,5 +252,21 @@ exemplos_saida:
     mensalidade_sem_desconto: { conteudo: '1200.00', valido: 1 }
     mensalidade_com_desconto: { conteudo: '1000.00', valido: 0 }
     semestre: { conteudo: '2025/1', valido: 1 }
-    inconsistencias: { conteudo: 'Mensalidade com desconto no contrato e MENOR que o esperado', valido: 1 }
+    inconsistencias: { conteudo: 'Mensalidade com desconto no contrato é MENOR que o esperado', valido: 1 }
     status: { conteudo: 'valido', valido: 1 }
+
+  contrato_mensalidade_com_desconto_nao_localizada:
+    cpf: { conteudo: '12345678901', valido: 1 }
+    mensalidade_sem_desconto: { conteudo: '1200.00', valido: 1 }
+    mensalidade_com_desconto: { conteudo: '', valido: 0 }
+    semestre: { conteudo: '2025/1', valido: 1 }
+    inconsistencias: { conteudo: 'Valor da mensalidade com desconto não localizado no contrato', valido: 1 }
+    status: { conteudo: 'valido', valido: 1 }
+
+  contrato_mensalidade_sem_desconto_nao_localizada:
+    cpf: { conteudo: '12345678901', valido: 1 }
+    mensalidade_sem_desconto: { conteudo: '', valido: 0 }
+    mensalidade_com_desconto: { conteudo: '1200.00', valido: 0 }
+    semestre: { conteudo: '2025/1', valido: 1 }
+    inconsistencias: { conteudo: 'Valor da mensalidade integral não localizado no contrato', valido: 0 }
+    status: { conteudo: 'invalido', valido: 0 }
