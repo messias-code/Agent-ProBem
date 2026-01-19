@@ -55,6 +55,8 @@ regras_gerais:
   - 'REGRA GLOBAL DE CONSISTENCIA: Campo que possuir erro registrado no catalogo NUNCA pode ter valido = 1.'
   - 'REGRA DE BLOQUEIO ABSOLUTO: Erro de CPF (Nivel Critico) interrompe todas as demais validacoes e invalida automaticamente o contrato.'
   - 'ORDEM DE EXECUCAO: CPF → Semestre → Mensalidades.'
+  - 'VALOR CANÔNICO OBRIGATÓRIO: Quando não houver erros aplicáveis do catalogo, inconsistencias.conteudo deve ser EXATAMENTE "Sem inconsistências".'
+  - 'Qualquer variação de grafia, acentuação, número ou capitalização de "Sem inconsistências" constitui VIOLAÇÃO DE TIPAGEM e ERRO GRAVE de execução.'
 
 # TIPAGEM DE DADOS (CONTRATO COERCITIVO)
 contrato_tipagem:
@@ -107,7 +109,7 @@ contrato_tipagem:
       - status.conteudo
     tipo_permitido:
       - 'APENAS frases do catalogo_erros'
-      - 'OU exatamente: ''Sem inconsistencias'''
+      - 'OU exatamente: ''Sem inconsistências'''
       - 'OU ''valido'' | ''invalido'' (para status)'
 
   normalizacao_nao_localizado:
@@ -201,7 +203,7 @@ saida_json:
   mensalidade_sem_desconto: { conteudo: 'xxxxx', valido: x }
   mensalidade_com_desconto: { conteudo: 'xxxxx', valido: x }
   semestre: { conteudo: 'xxxxx', valido: x }
-  inconsistencias: { conteudo: 'Texto exato do catalogo ou Sem inconsistencias', valido: x }
+  inconsistencias: { conteudo: 'Texto exato do catalogo ou Sem inconsistências', valido: x }
   status: { conteudo: 'valido ou invalido', valido: x }
 
 # EXEMPLOS DE SAIDA (FEW-SHOT LEARNING)
@@ -212,7 +214,7 @@ exemplos_saida:
     mensalidade_sem_desconto: { conteudo: '1200.00', valido: 1 }
     mensalidade_com_desconto: { conteudo: '1100.00', valido: 1 }
     semestre: { conteudo: '2025/1', valido: 1 }
-    inconsistencias: { conteudo: 'Sem inconsistencias', valido: 1 }
+    inconsistencias: { conteudo: 'Sem inconsistências', valido: 1 }
     status: { conteudo: 'valido', valido: 1 }
 
   contrato_cpf_diverge:
@@ -244,7 +246,7 @@ exemplos_saida:
     mensalidade_sem_desconto: { conteudo: '1500.00', valido: 1 }
     mensalidade_com_desconto: { conteudo: '1500.00', valido: 1 }
     semestre: { conteudo: '2025/2', valido: 1 }
-    inconsistencias: { conteudo: 'Sem inconsistencias', valido: 1 }
+    inconsistencias: { conteudo: 'Sem inconsistências', valido: 1 }
     status: { conteudo: 'valido', valido: 1 }
 
   contrato_valido_com_desconto_falho:
