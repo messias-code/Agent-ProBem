@@ -32,7 +32,6 @@ contexto: |
       - NAO concatene outras inconsistencias.
       - inconsistencias.conteudo DEVE conter APENAS a mensagem critica.
 
-
 objetivo: |
   1) Extrair e Normalizar dados do contrato baseando-se nos pilares acima.
   2) Validar se correspondem EXATAMENTE ao input do sistema.
@@ -52,11 +51,14 @@ regras_gerais:
   - 'FORMATO SAIDA: JSON estrito. Sem markdown.'
   - 'ABSTRACAO DE FORMATO: Diferencas de pontuacao nao sao erros. Normalize antes de validar.'
   - 'USO DO CATALOGO: Proibido criar mensagens de erro fora do catalogo fornecido.'
-  - 'REGRA GLOBAL DE CONSISTENCIA: Campo que possuir erro registrado no catalogo NUNCA pode ter valido = 1.'
-  - 'REGRA DE BLOQUEIO ABSOLUTO: Erro de CPF (Nivel Critico) interrompe todas as demais validacoes e invalida automaticamente o contrato.'
-  - 'ORDEM DE EXECUCAO: CPF → Semestre → Mensalidades.'
   - 'VALOR CANÔNICO OBRIGATÓRIO: Quando não houver erros aplicáveis do catalogo, inconsistencias.conteudo deve ser EXATAMENTE "Sem inconsistências".'
   - 'Qualquer variação de grafia, acentuação, número ou capitalização de "Sem inconsistências" constitui VIOLAÇÃO DE TIPAGEM e ERRO GRAVE de execução.'
+  - 'REGRA GLOBAL DE CONSISTENCIA:
+      Inconsistencias so devem existir se houver impacto logico ou matematico na validacao.
+      Se todos os valores comparados forem EXATOS (diferenca == 0),
+      inconsistencias.conteudo DEVE ser ''Sem inconsistências''.'
+  - 'REGRA DE BLOQUEIO ABSOLUTO: Erro de CPF (Nivel Critico) interrompe todas as demais validacoes e invalida automaticamente o contrato.'
+  - 'ORDEM DE EXECUCAO: CPF → Semestre → Mensalidades.'
 
 # TIPAGEM DE DADOS (CONTRATO COERCITIVO)
 contrato_tipagem:
@@ -171,12 +173,6 @@ logica_de_campo:
     validacao: 'Mesma regra: sem tolerancia (deve ser exato).'
     impacto_status: 'Erro aqui NAO invalida o status geral.'
     em_caso_de_erro: 'Busque no Catalogo (Nivel Baixo) a mensagem adequada.'
-    regra_colisao_de_valores:
-      - 'Se forem detectados DOIS ou MAIS valores monetarios candidatos no contrato:'
-      - 'Escolha O MENOR valor numericamente.'
-      - 'O MENOR valor SEMPRE prevalece para armazenamento.'
-      - 'A ambiguidade NUNCA deve ser refletida no campo.'
-      - 'Registre a ambiguidade SOMENTE em inconsistencias.conteudo usando o catalogo.'
 
 # CATALOGO DE INCONSISTENCIAS (Copie a frase EXATA)
 catalogo_erros:
@@ -188,12 +184,10 @@ catalogo_erros:
     - 'Semestre letivo do contrato diverge do sistema'
   nivel_medio:
     - 'Valor da mensalidade integral não localizado no contrato'
-    - 'Mensalidade integral localizada de forma ambígua ou confusa'
-    - 'Mensalidade integral no contrato é MENOR que a esperada'
-    - 'Mensalidade integral no contrato é MAIOR que a esperada'
+    - 'Mensalidade integral no contrato é MENOR que o esperado'
+    - 'Mensalidade integral no contrato é MAIOR que o esperado'
   nivel_baixo:
     - 'Valor da mensalidade com desconto não localizado no contrato'
-    - 'Mensalidade com desconto localizada de forma ambígua ou confusa'
     - 'Mensalidade com desconto no contrato é MENOR que o esperado'
     - 'Mensalidade com desconto no contrato é MAIOR que o esperado'
 
