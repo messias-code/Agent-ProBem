@@ -15,7 +15,8 @@ contexto: |
   3. MENTALIDADE FINANCEIRA (Mensalidade - Precisao):
   - Prioridade: Busque primeiro o valor explicito da parcela.
   - Recurso: Se houver APENAS o 'Valor Total do Semestre', divida pelo numero de parcelas (ex: 6) para achar a mensalidade.
-  - Regra de Ouro: SEM TOLERANCIA PARA DIFERENCAS. O valor deve ser EXATO. Se houver qualquer diferenca (mesmo centavos), o valor e DIVERGENTE.
+  - Recurso de Calculo: OPERE MATEMATICAMENTE. Se houver descontos descritos (ex: % pontualidade), aplique o calculo sobre o valor base para encontrar o valor final.
+  - Regra de Ouro: SEM TOLERANCIA PARA DIFERENCAS APOS TRUNCAGEM. O valor deve ser EXATO nas duas primeiras casas.
 
   4. MENTALIDADE DE DIAGNOSTICO (Como preencher inconsistencias):
   - NUNCA invente frases de erro.
@@ -77,6 +78,10 @@ contrato_tipagem:
     semantica:
       - ''''' (string vazia) significa: valor nao localizado no contrato.'
       - '0.00 significa: valor capturado explicitamente como zero.'
+    tratamento_decimal:
+      - 'REGRA DE TRUNCAGEM: Considere estritamente as DUAS primeiras casas decimais.'
+      - 'Descarte qualquer dígito a partir da 3ª casa decimal.'
+      - 'PROIBIDO ARREDONDAR (Ex: 1200.559 torna-se 1200.55 | 1200.551 torna-se 1200.55).'
     proibicoes_absolutas:
       - 'Proibido múltiplos valores (/, -, e, ou).'
       - 'Proibido texto explicativo.'
@@ -125,7 +130,7 @@ logica_de_campo:
 
   1_cpf:
     tipo: OBRIGATORIO (Bloqueante)
-    extracao: 'Busque 11 digitos. Ignore pontuacao.'
+    extracao: 'Busque digitos. Ignore pontuacao. CONSIDERE EQUIVALENCIA NUMERICA ABSOLUTA (Ignore TODOS os zeros a esquerda: 00074 == 74).'
     regra_bloqueio: |
       Se CPF nao localizado OU divergente:
       1. Pare a analise.
@@ -139,10 +144,14 @@ logica_de_campo:
     referencia: 'Deve bater com o valor da variavel (semestre).'
     alerta_vies_temporal: 'NAO use o ano atual como base. O Input manda.'
     estrategia_busca:
-      - 'Prioridade 1: Cabecalho e Objeto do contrato.'
-      - 'Prioridade 2: Data de assinatura (deducao) apenas se o texto explicito falhar.'
+      - 'Prioridade 1 (Explicita): Busque mencao direta (ex: 2025/1, 2º semestre 2024).'
+      - 'Prioridade 2 (Deducao): SE E SOMENTE SE falhar P1, busque data de "Vigência" ou "Assinatura".'
+    regra_deducao_temporal: |
+      Converta a data encontrada em Semestre:
+      - Mes 1 a 6 = Semestre 1 (ex: 15/03/2025 -> 2025/1)
+      - Mes 7 a 12 = Semestre 2 (ex: 20/08/2025 -> 2025/2)
     algoritmo_universal_de_comparacao:
-      1: 'Decomponha INPUT e CONTRATO em [ANO, INDICE].'
+      1: 'Decomponha INPUT e CONTRATO (Explicito ou Deduzido) em [ANO, INDICE].'
       2: 'Compare matematicamente.'
     em_caso_de_erro: 'Busque no Catalogo (Nivel Alto) a mensagem adequada.'
 
@@ -157,20 +166,23 @@ logica_de_campo:
       - 'Status geral DEVE ser invalido.'
       - 'Registre erro de Nivel Medio no catalogo.'
     validacao:
-      - 'Calcule a diferenca absoluta: abs(ValorContrato - ValorEsperado).'
+      - 'NORMALIZACAO DECIMAL: Antes de comparar, TRUNQUE o valor do contrato para 2 casas decimais (ignore da 3ª casa em diante).'
+      - 'Calcule a diferenca absoluta: abs(ValorContratoTruncado - ValorEsperado).'
       - 'Se diferenca == 0 -> Valido=1 (Valor exato).'
       - 'Se diferenca != 0 -> Valido=0 (Marque como divergente, qualquer diferenca invalida).'
     em_caso_de_erro: 'Busque no Catalogo (Nivel Medio) a mensagem adequada.'
 
   4_mensalidade_com_desconto:
     tipo: DESEJAVEL
-    regra: 'Busque evidencia de bolsa. Se nao houver mencao -> valor = mensalidade_sem_desconto.'
+    regra: 'Busque evidencia de bolsa. Se nao houver mencao explicita -> APLICAR CALCULO: Verifique se ha clausulas de desconto (ex: pontualidade) e aplique a porcentagem sobre o valor integral.'
+    regra_anti_duplicacao: 'Se o Input tiver valores iguais (Integral == Com Desconto) e o contrato tiver APENAS UM valor, NAO repita o valor neste campo. Deixe vazio.'
+    estrategia_conflito: 'Se houver múltiplos valores válidos (ex: valor com bolsa vs valor pontualidade), priorize o MENOR valor matemático. TRAVA DE SEGURANÇA: Garanta que o valor menor refere-se inequivocamente à MENSALIDADE e não a taxas/serviços extras.'
     regra_ausencia:
       - 'Se valor == '''' (nao localizado):'
       - 'Marque valido = 0.'
       - 'NAO invalide o status geral.'
       - 'Registre erro de Nivel Baixo no catalogo.'
-    validacao: 'Mesma regra: sem tolerancia (deve ser exato).'
+    validacao: 'Mesma regra: aplique TRUNCAGEM de 2 casas antes da comparação. Sem tolerancia.'
     impacto_status: 'Erro aqui NAO invalida o status geral.'
     em_caso_de_erro: 'Busque no Catalogo (Nivel Baixo) a mensagem adequada.'
 
