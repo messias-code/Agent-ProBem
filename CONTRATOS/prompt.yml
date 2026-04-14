@@ -17,6 +17,7 @@ contexto: |
   - Recurso: Se houver APENAS o 'Valor Total do Semestre', divida pelo numero de parcelas (ex: 6) para achar a mensalidade.
   - Recurso de Calculo: OPERE MATEMATICAMENTE. Se houver descontos descritos (ex: % pontualidade), aplique o calculo sobre o valor base para encontrar o valor final.
   - Regra de Ouro: SEM TOLERANCIA PARA DIFERENCAS APOS TRUNCAGEM. O valor deve ser EXATO nas duas primeiras casas.
+  - Regra Anti-Duplicacao: Se o contrato mostrar que NAO HÁ desconto aplicado (ex: desconto = 0,00 ou sem mencao a bolsa aplicada ao aluno), JAMAIS repita o valor integral no campo com desconto. Retorne VAZIO (''), mesmo que o sistema traga valores iguais.
 
   4. MENTALIDADE DE DIAGNOSTICO (Como preencher inconsistencias):
   - NUNCA invente frases de erro.
@@ -59,7 +60,8 @@ regras_gerais:
       Se todos os valores comparados forem EXATOS (diferenca == 0),
       inconsistencias.conteudo DEVE ser ''Sem inconsistências''.'
   - 'REGRA DE BLOQUEIO ABSOLUTO: Erro de CPF (Nivel Critico) interrompe todas as demais validacoes e invalida automaticamente o contrato.'
-  - 'ORDEM DE EXECUCAO: CPF → Semestre → Mensalidades.'
+  - 'ORDEM DE EXECUCAO: CPF ? Semestre ? Mensalidades.'
+  - 'REGRA DE CURTO-CIRCUITO PARA VALORES AUSENTES: Se qualquer mensalidade (integral ou com desconto) não for localizada no contrato (resultado = string vazia ''''), É ESTRITAMENTE PROIBIDO realizar comparações matemáticas com o valor do sistema. Aborte a validação matemática e aplique IMEDIATAMENTE a mensagem de "não localizado" correspondente.'
 
 # TIPAGEM DE DADOS (CONTRATO COERCITIVO)
 contrato_tipagem:
@@ -164,7 +166,8 @@ logica_de_campo:
       - 'Se valor == '''' (nao localizado):'
       - 'Marque valido = 0.'
       - 'Status geral DEVE ser invalido.'
-      - 'Registre erro de Nivel Medio no catalogo.'
+      - 'Registre erro de Nivel Medio no catalogo ("Valor da mensalidade integral não localizado no contrato").'
+    trava_comparacao_ausente: 'CURTO-CIRCUITO: Se o valor extraído for vazio (''''), CANCELE a validação matemática abaixo. NÃO compare com o sistema.'
     validacao:
       - 'NORMALIZACAO DECIMAL: Antes de comparar, TRUNQUE o valor do contrato para 2 casas decimais (ignore da 3ª casa em diante).'
       - 'Calcule a diferenca absoluta: abs(ValorContratoTruncado - ValorEsperado).'
@@ -174,14 +177,16 @@ logica_de_campo:
 
   4_mensalidade_com_desconto:
     tipo: DESEJAVEL
-    regra: 'Busque evidencia de bolsa. Se nao houver mencao explicita -> APLICAR CALCULO: Verifique se ha clausulas de desconto (ex: pontualidade) e aplique a porcentagem sobre o valor integral.'
-    regra_anti_duplicacao: 'Se o Input tiver valores iguais (Integral == Com Desconto) e o contrato tiver APENAS UM valor, NAO repita o valor neste campo. Deixe vazio.'
-    estrategia_conflito: 'Se houver múltiplos valores válidos (ex: valor com bolsa vs valor pontualidade), priorize o MENOR valor matemático. TRAVA DE SEGURANÇA: Garanta que o valor menor refere-se inequivocamente à MENSALIDADE e não a taxas/serviços extras.'
+    estrategia_extracao_exaustiva: 'VARREDURA COMPLETA: Nunca pare no primeiro valor de parcela encontrado. Leia TODO o quadro financeiro e as cláusulas subsequentes. Busque ativamente por um SEGUNDO valor de "parcela" ou "mensalidade" que seja MENOR que o valor integral, ou procure percentuais de desconto para calcular.'
+    regra_extracao_cega: 'EXTRAÇÃO CEGA OBRIGATÓRIA: Ignore o valor esperado pelo Input durante a busca. Se o contrato apresentar um valor de parcela explicitamente menor (ex: 569.19), CAPTURE-O OBRIGATORIAMENTE, mesmo que não haja a palavra "desconto" ao lado dele e mesmo que o Input espere um valor maior (ex: 1897.30).'
+    regra_anti_duplicacao: 'REGRA ABSOLUTA: Só deixe VAZIO ('''') se o contrato listar inequivocamente que não há descontos (ex: desconto = 0,00) OU se, após varredura exaustiva, existir apenas um único valor de parcela no documento. Se houver um segundo valor menor, a captura é obrigatória.'
+    estrategia_conflito: 'Se houver múltiplos valores extraídos, priorize SEMPRE o MENOR valor matemático. TRAVA DE SEGURANÇA: Garanta que o valor menor refere-se à MENSALIDADE (parcela) e não a taxas/serviços extras.'
     regra_ausencia:
       - 'Se valor == '''' (nao localizado):'
       - 'Marque valido = 0.'
       - 'NAO invalide o status geral.'
-      - 'Registre erro de Nivel Baixo no catalogo.'
+      - 'Registre erro de Nivel Baixo no catalogo ("Valor da mensalidade com desconto não localizado no contrato").'
+    trava_comparacao_ausente: 'CURTO-CIRCUITO: Se o valor extraído for vazio (''''), CANCELE a validação matemática abaixo. NÃO compare com o sistema.'
     validacao: 'Mesma regra: aplique TRUNCAGEM de 2 casas antes da comparação. Sem tolerancia.'
     impacto_status: 'Erro aqui NAO invalida o status geral.'
     em_caso_de_erro: 'Busque no Catalogo (Nivel Baixo) a mensagem adequada.'
@@ -278,3 +283,19 @@ exemplos_saida:
     semestre: { conteudo: '2025/1', valido: 1 }
     inconsistencias: { conteudo: 'Valor da mensalidade integral não localizado no contrato', valido: 0 }
     status: { conteudo: 'invalido', valido: 0 }
+
+  contrato_sem_desconto_input_duplicado:
+    cpf: { conteudo: '12345678901', valido: 1 }
+    mensalidade_sem_desconto: { conteudo: '2050.00', valido: 1 }
+    mensalidade_com_desconto: { conteudo: '', valido: 0 }
+    semestre: { conteudo: '2025/1', valido: 1 }
+    inconsistencias: { conteudo: 'Valor da mensalidade com desconto não localizado no contrato', valido: 1 }
+    status: { conteudo: 'valido', valido: 1 }
+
+  contrato_com_bolsa_ignorando_input_errado:
+    cpf: { conteudo: '12345678901', valido: 1 }
+    mensalidade_sem_desconto: { conteudo: '1897.30', valido: 1 }
+    mensalidade_com_desconto: { conteudo: '569.19', valido: 0 }
+    semestre: { conteudo: '2025/2', valido: 1 }
+    inconsistencias: { conteudo: 'Mensalidade com desconto no contrato é MENOR que o esperado', valido: 1 }
+    status: { conteudo: 'valido', valido: 1 }
