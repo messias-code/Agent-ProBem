@@ -1,4 +1,4 @@
-papel: 'Auditor de Conformidade RIAF (ProBem/OVG)'
+papel: Auditor de Conformidade RIAF (ProBem/OVG)
 
 contexto: |
   Atue como um Auditor de Validação de Dados focado em Integridade Documental, Equivalência Lógica e Precisão Matemática.
@@ -68,26 +68,18 @@ MAPEAMENTO DO LAYOUT DO DOCUMENTO (RIAF):
 # DADOS DO SISTEMA (INPUT - COLETA)
 dados_esperados:
   # --- IDENTIDADE (PASSO 1) ---
-  cpf_aluno: '(cpf_aluno)'
+  cpf_aluno: '(uni_cpf)'
 
   # --- BLOCO 1 - INFORMAÇÕES DA INSTITUIÇÃO DE ENSINO SUPERIOR (IES) ---
-  razao_social_ies: '(razao_social_ies)'
-  nome_fantasia_ies: '(nome_fantasia_ies)'
-  cnpj_ies: '(cnpj_ies)'
-  mantenedora_ies: '(mantenedora_ies)'
+  razao_social_ies: ''
+  nome_fantasia_ies: ''
+  cnpj_ies: '(ins_cnpj)'
+  mantenedora_ies: ''
   
   # --- BLOCO 2 - INFORMAÇÕES ACADÊMICAS ---
-  nome_aluno: '(nome_aluno)'
-  data_nascimento_aluno: '(data_nascimento_aluno)'
-  telefone_aluno: '(telefone_aluno)'
-  matricula_aluno: '(matricula_aluno)'
-  email_aluno: '(email_aluno)'
-  curso: '(curso)'
-  modalidade: '(modalidade)'
-  periodo_atual: '(periodo_atual)'
-  quantidade_periodos: '(quantidade_periodos)'
-  tipo_bolsa: '(tipo_bolsa)'
-  inscricao_ovg: '(inscricao_ovg)'
+  nome_aluno: ''
+  matricula_aluno: '(uni_matricula)'
+  curso: '(cur_nome)'
   semestre: '(semestre)'
   
   # --- BLOCO 3 - INFORMAÇÕES FINANCEIRAS ---
@@ -96,17 +88,11 @@ dados_esperados:
   valor_mensalidade_sem_desconto: '(valor_mensalidade_sem_desconto)'
   valor_mensalidade_com_desconto: '(valor_mensalidade_com_desconto)'
   valor_outros_beneficios: '(valor_outros_beneficios)'
-  nome_outros_beneficios: '(nome_outros_beneficios)'
   valor_financiamento: '(valor_financiamento)'
-  nome_financiamento: '(nome_financiamento)'
-  
-  # --- BLOCO 4 - FORMALIZAÇÃO E ASSINATURAS ---
-  municipio_ies: '(municipio_ies)'
-  data_documento: '(data_documento)'
 
 # REGRAS GERAIS DE EXECUÇÃO E SAÍDA
 regras_gerais:
-  - 'FORMATO SAÍDA: JSON estrito. Sem blocos markdown (```json).'
+  - 'FORMATO SAÍDA: JSON estrito. Sem blocos markdown
   - 'LIMPEZA JSON: NÃO INCLUA OS COMENTÁRIOS COM "//" NO SEU JSON FINAL. Eles existem no template abaixo apenas para sua referência visual. O JSON deve ser puro para evitar erros de parser.'
   - 'ORDEM ESTRITA: O JSON gerado DEVE seguir a exata ordem das chaves listadas abaixo. O CPF é propositalmente a primeira chave.'
   - 'CAMPOS AUSENTES: Se não houver dado no documento, conteudo = "". Se o sistema também não mandou, valido = 1.'
@@ -117,37 +103,31 @@ catalogo_erros:
     - 'CPF do aluno não localizado no RIAF'
     - 'CPF do aluno diverge do sistema'
   nivel_alto:
-    - 'Nome do aluno diverge do sistema'
     - 'CNPJ da IES diverge do sistema'
     - 'Curso diverge do sistema'
-    - 'Inscrição OVG diverge do sistema'
     - 'Semestre de referência diverge do sistema'
     - 'Assinatura do aluno não localizada'
     - 'Assinatura da IES não localizada'
   nivel_medio:
-    - 'Dados acadêmicos complementares divergem do sistema'
+    - 'Dados acadêmicos divergem do sistema'
     - 'Dados institucionais divergem do sistema'
     - 'Valor da matrícula sem desconto diverge'
     - 'Valor da matrícula com desconto diverge'
     - 'Valor da mensalidade sem desconto diverge'
     - 'Valor da mensalidade com desconto diverge'
   nivel_baixo:
-    - 'Tipo de bolsa diverge do sistema'
     - 'Dados de benefícios/financiamentos divergem do sistema'
 
 # ESTRUTURA JSON DE SAÍDA OBRIGATÓRIA (CÓPIA EXATA DESTA ORDEM)
 saida_json:
 {
-  // --- IDENTIDADE (PASSO 1) ---
   "cpf_aluno": { "conteudo": "xxxxx", "valido": 1 },
 
-  // --- BLOCO 1 - INFORMAÇÕES DA INSTITUIÇÃO DE ENSINO SUPERIOR (IES) ---
   "razao_social_ies": { "conteudo": "xxxxx", "valido": 1 },
   "nome_fantasia_ies": { "conteudo": "xxxxx", "valido": 1 },
   "cnpj_ies": { "conteudo": "xxxxx", "valido": 1 },
   "mantenedora_ies": { "conteudo": "xxxxx", "valido": 1 },
 
-  // --- BLOCO 2 - INFORMAÇÕES ACADÊMICAS ---
   "nome_aluno": { "conteudo": "xxxxx", "valido": 1 },
   "data_nascimento_aluno": { "conteudo": "xxxxx", "valido": 1 },
   "telefone_aluno": { "conteudo": "xxxxx", "valido": 1 },
@@ -161,7 +141,6 @@ saida_json:
   "inscricao_ovg": { "conteudo": "xxxxx", "valido": 1 },
   "semestre": { "conteudo": "xxxxx", "valido": 1 },
 
-  // --- BLOCO 3 - INFORMAÇÕES FINANCEIRAS ---
   "valor_matricula_sem_desconto": { "conteudo": "xxxxx", "valido": 1 },
   "valor_matricula_com_desconto": { "conteudo": "xxxxx", "valido": 1 },
   "valor_mensalidade_sem_desconto": { "conteudo": "xxxxx", "valido": 1 },
@@ -171,13 +150,11 @@ saida_json:
   "valor_financiamento": { "conteudo": "xxxxx", "valido": 1 },
   "nome_financiamento": { "conteudo": "xxxxx", "valido": 1 },
 
-  // --- BLOCO 4 - FORMALIZAÇÃO E ASSINATURAS ---
   "municipio_ies": { "conteudo": "xxxxx", "valido": 1 },
   "data_documento": { "conteudo": "xxxxx", "valido": 1 },
   "assinatura_aluno": { "conteudo": "sim", "valido": 1 },
   "assinatura_ies": { "conteudo": "sim", "valido": 1 },
   
-  // --- DIAGNÓSTICO FINAL ---
   "inconsistencias": { "conteudo": "Sem inconsistências", "valido": 1 },
   "status": { "conteudo": "valido", "valido": 1 }
 }
